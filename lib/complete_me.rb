@@ -1,7 +1,7 @@
 require './lib/node'
 require 'pry'
 
-class Trie
+class CompleteMe
   attr_accessor :root, :substring_hash
 
 
@@ -37,7 +37,6 @@ class Trie
 
   def count(node=root, stack = [])
     return 0 if node.children.empty?
-    counter =0
     array = []
     stack = []
     node.children.each_key do |key|
@@ -46,12 +45,12 @@ class Trie
     
     while !stack.empty? do
       node = stack.pop
-      counter += 1 if node.flag 
+      array << node.count
       node.children.each_key do |key|
         stack.push(node.children[key])
       end
     end
-    counter
+    p array.inject(&:+)
   end
 
   def down_to_node(substring, node=root)
@@ -72,6 +71,7 @@ class Trie
     else
       suggestions
     end
+    
   end
 
   def traverse_trie(node, prefix, suggestions=[])

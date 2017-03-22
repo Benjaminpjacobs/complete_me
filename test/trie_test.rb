@@ -40,10 +40,9 @@ class TrieTest < Minitest::Test
   def test_it_can_count
     # skip
     trie = Trie.new
-    trie.insert("A")
-    # binding.pry
-    trie.insert("a")
     trie.insert("aa")
+    trie.insert("a")
+    trie.insert("A")
     trie.insert("aal")
     trie.insert("aalii")
     trie.insert("aam")
@@ -52,20 +51,20 @@ class TrieTest < Minitest::Test
     trie.insert("aardwolf")
     assert_equal 9, trie.count
   end
-  # def test_it_can_count_bigger
-  #   skip
-  #   trie = Trie.new
-  #   dictionary = File.read("/usr/share/dict/words")
-  #   trie.populate(dictionary)
-  #   assert_equal 235886, trie.count
-  # end
-  # def test_it_can_suggest_big
-  #   trie = Trie.new
-  #   dictionary = File.read("/usr/share/dict/words")
-  #   trie.populate(dictionary)
-  #   expected = []
-  #   assert_equal expected, trie.suggest("do")
-  # end
+  def test_it_can_count_bigger
+    skip
+    trie = Trie.new
+    dictionary = File.read("/usr/share/dict/words")
+    trie.populate(dictionary)
+    assert_equal 235886, trie.count
+  end
+  def test_it_can_suggest_big
+    trie = Trie.new
+    dictionary = File.read("/usr/share/dict/words")
+    trie.populate(dictionary)
+    expected = 991
+    assert_equal expected, trie.suggest("do").count
+  end
   def test_down_to_node
     trie = Trie.new
     trie.insert("pizza")
@@ -77,8 +76,8 @@ class TrieTest < Minitest::Test
     trie.insert("pizza")
     trie.insert("pizzeria")
     trie.insert("pize")
-    expected = ["pizza", "pizzeria", "pize"]
-    assert_equal expected,trie.suggest("piz") 
+    expected = ["pize", "pizza", "pizzeria"]
+    assert_equal expected, trie.suggest("piz") 
   end
   def test_suggestion
     trie = Trie.new
@@ -86,10 +85,29 @@ class TrieTest < Minitest::Test
     trie.insert("dood")
     trie.insert("dont")
     trie.insert("dog")
-    expected = ["do", "dood", "dont", "dog"]
+    expected = ["do", "dog", "dont", "dood"]
     assert_equal expected, trie.suggest("do") 
   end
+  def test_select
+    trie = Trie.new
+    trie.insert("pizza")
+    trie.insert("pizzeria")
+    trie.insert("pize")
+    trie.suggest("piz")
+    trie.select("piz", "pizza")
+    trie.select("piz", "pizza")
+    trie.select("piz", "pizza")
+    assert_equal 3, trie.substring_hash["piz"]["pizza"]
+  end
   def test_weighting
-    
+    trie = Trie.new
+    trie.insert("pizza")
+    trie.insert("piza")
+    trie.insert("pizo")
+    trie.suggest("piz")
+    trie.select("piz", "pizza")
+    result = trie.suggest("piz")
+    expected = ["pizza", "piza", "pizo"]
+    assert_equal expected, result
   end
 end
