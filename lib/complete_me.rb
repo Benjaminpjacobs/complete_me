@@ -12,45 +12,75 @@ class CompleteMe
 
   def insert(string, node=@root)
     chars = string.chars
-    if chars.empty? && !node.children.empty?
-      node.flag = true
+    if end_of_word_with_children(chars, node)
       return
-    elsif chars.empty?
-      node.flag = true 
+    elsif end_of_word(chars, node)
       return
-    elsif !node.children.include?(chars[0].to_sym)
-      node.insert_letter(chars[0])
-      node = node.next_node(chars.shift)
-      insert(chars.join,node)
-    elsif
-      node = node.next_node(chars.shift)
-      insert(chars.join,node)
+    elsif letter_is_not_a_child(node, chars)
+      insert_new_child(node, chars)
+    else
+     move_to_next_node(node, chars)
     end
+  end
+
+  def move_to_next_node(node,chars)
+    node = node.next_node(chars.shift)
+    insert(chars.join,node)
+  end
+
+  def insert_new_child(node, chars)
+    node.insert_letter(chars[0])
+    node = node.next_node(chars.shift)
+    insert(chars.join,node)
+  end
+
+  def letter_is_not_a_child(node, chars)
+    !node.children.include?(chars[0].to_sym)
+  end
+
+  def end_of_word_with_children(chars, node)
+    node.flag = true if chars.empty? && !node.children.empty?
+  end
+
+  def end_of_word(chars, node)
+    node.flag = true  if chars.empty?
   end
 
   def populate(dictionary)
     dictionary = dictionary.split("\n")
-    dictionary.each do |word|
-      insert(word)
+    dictionary.each{ |word| insert(word) }
+  end
+
+  def count
+    if root.children.empty?
+      0
+    else
+      stack_count
     end
   end
 
-  def count(node=root, stack = [])
-    return 0 if node.children.empty?
-    array = []
+  def stack_count(node=root)
     stack = []
     node.children.each_key do |key|
         stack.push(node.children[key])
     end
-    
+    counter(stack)
+  end
+
+  def counter(stack)
+    nodes = 0
     while !stack.empty? do
       node = stack.pop
-      array << node.count
-      node.children.each_key do |key|
-        stack.push(node.children[key])
-      end
+      nodes += 1 if node.flag
+      stack_push(node, stack)
     end
-    p array.inject(&:+)
+    nodes
+  end
+
+  def stack_push(object,array)
+    object.children.each_key do |key|
+      array.push(object.children[key])
+    end
   end
 
   def down_to_node(substring, node=root)
@@ -64,37 +94,70 @@ class CompleteMe
   def suggest(substring)
     start = down_to_node(substring)
     suggestions = traverse_trie(start, substring).sort
+    check_weighting(substring, suggestions)
+  end
+
+  def check_weighting(substring, suggestions)
     if substring_hash.keys.include?(substring)
-      top_hit = substring_hash[substring].keys.first
-      suggestions.delete(top_hit)
-      suggestions.unshift(top_hit)
+      move_up_weighted_suggestion(substring, suggestions)
     else
       suggestions
     end
-    
+  end
+
+  def move_up_weighted_suggestion(substring, suggestions)
+    top_hit = find_top_hit(substring)
+    suggestions.delete(top_hit)
+    suggestions.unshift(top_hit)
+  end
+
+  def find_top_hit(substring)
+     key =substring_hash[substring].values.max
+     substring_hash[substring].key(key)
   end
 
   def traverse_trie(node, prefix, suggestions=[])
-      if node.flag && node.children.empty?
-        return prefix
-      elsif node.flag
-        suggestions << prefix
-      end
-      node.children.each_key do |k|
-          prefix = prefix + k.to_s
-          suggestions.push(traverse_trie(node.children[k],prefix, suggestions))
-          prefix = prefix[0..(prefix.length-2)]
-      end
+    if node.flag && node.children.empty?
+      return prefix
+    elsif node.flag
+      suggestions << prefix
+    end
+    check_each_child(prefix, suggestions, node)
+    clean_up_suggestions(suggestions)
+  end
+  
+  def check_each_child(prefix, suggestions, node)
+    node.children.each_key do |k|
+        prefix = prefix + k.to_s
+        push_suggestion(suggestions, node, k, prefix)
+        prefix = prefix[0..(prefix.length-2)]
+    end
+  end
+
+  def push_suggestion(suggestions, node, key, prefix)
+    suggestions.push(traverse_trie(node.children[key],prefix, suggestions))
+  end
+
+  def clean_up_suggestions(suggestions)
     suggestions.map!{|sug| sug if sug.is_a?(String)}.compact!
   end
 
   def select(substring, selection)
-    if substring_hash.keys.include?(substring)
+    if substring_tracked_but_has_value(substring, selection)
+       substring_hash[substring][selection] = 1
+    elsif substring_hash.keys.include?(substring)
       substring_hash[substring][selection] += 1
     else
-      selection_hash = {}
-      selection_hash[selection] = 1
-      substring_hash[substring] = selection_hash
+      create_selection_hash(selection, substring)
     end
+  end
+  def substring_tracked_but_has_value(substring, selection)
+    substring_hash.keys.include?(substring) && !substring_hash[substring].keys.include?(selection)
+  end
+
+  def create_selection_hash(selection, substring)
+    selection_hash = {}
+    selection_hash[selection] = 1
+    substring_hash[substring] = selection_hash
   end
 end
