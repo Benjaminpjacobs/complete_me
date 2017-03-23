@@ -93,7 +93,7 @@ class CompleteMeTest < Minitest::Test
     cm.populate(dictionary)
     expected = 991
     assert_equal expected, cm.suggest("do").count
-end
+  end
 
   def test_down_to_node
     cm = CompleteMe.new
@@ -132,6 +132,7 @@ end
     cm.select("piz", "pizza")
     assert_equal 3, cm.substring_hash["piz"]["pizza"]
   end
+
   def test_weighting
     cm = CompleteMe.new
     cm.insert("pizza")
