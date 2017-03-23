@@ -1,8 +1,7 @@
+require './test/test_helper'
 require 'minitest/autorun'
 require 'minitest/pride'
-require './test/test_helper'
 require './lib/complete_me'
-require "pry"
 
 class CompleteMeTest < Minitest::Test
   def test_it_exists
@@ -60,7 +59,6 @@ class CompleteMeTest < Minitest::Test
     cm = CompleteMe.new
     cm.insert_new_child(cm.root, ["c", "a", "t"])
     assert cm.root.children[:c].children[:a].children[:t].flag
-    # binding.pry
   end
 
   def test_it_can_count_zero
@@ -95,8 +93,8 @@ class CompleteMeTest < Minitest::Test
     cm.populate(dictionary)
     expected = 991
     assert_equal expected, cm.suggest("do").count
+end
 
-  end
   def test_down_to_node
     cm = CompleteMe.new
     cm.insert("pizza")
@@ -166,23 +164,20 @@ class CompleteMeTest < Minitest::Test
     cm = CompleteMe.new
     cm.insert("do")
     cm.insert("dog")
-    cm.insert("dot")
-    cm.insert("doodle")
-    cm.insert("doubt")
-    cm.insert("double")
     assert_equal "dog",  cm.suggest("d")[1]
-    # binding.pry
-    cm.delete_word("dog")
-    assert_equal "doodle", cm.suggest("d")[1]
+    cm.delete_word("do")
+    assert_equal 1, cm.suggest("d").count
   end
 
   def test_delete_leaf_node
     cm = CompleteMe.new
-    cm.insert("apple")
-    cm.insert("apples")
-    cm.insert("apportion")
-    assert_equal "apple", cm.suggest("app")[0]
-    cm.delete_word("apple")
-    assert_equal "apples", cm.suggest("app")[0]
+    cm.insert("ab")
+    cm.insert("abc")
+    cm.insert("abcoop")
+    cm.insert("abcaad")
+    assert_equal "abcaad", cm.suggest("ab")[2]
+    cm.delete_word("abcaad")
+    expected = cm.suggest("ab")
+    refute expected.include?("abcaad")
   end
 end

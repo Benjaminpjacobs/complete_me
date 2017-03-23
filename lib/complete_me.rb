@@ -162,30 +162,26 @@ class CompleteMe
   end
 
   def delete_word(string)
-    clean_substring_hash(string)
     node = down_to_node(string)
-    if node.children
+    if !node.children.empty?
       node.flag = false
     else
-      delete_leaf(string, node)
+      prune_tree(string, node)
     end
   end
 
-  def delete_leaf(string, node)
+  def prune_tree(string, node)
+    return if string.empty?
     key = string[-1].to_sym
-    node = down_to_node(string.chop!)
+    string.chop!
+    node = down_to_node(string)
+
     if node.children.keys.count == 1
       node.children = {}
-      delete_leaf(string, down_to_node(string))
+      prune_tree(string, down_to_node(string))
     else
       node.children.delete(key)
       return
     end
-  end
-
-  def clean_substring_hash(string)
-    substring_hash.values.each do |sub_hash|
-      sub_hash.delete(string)
-    end  
   end
 end
