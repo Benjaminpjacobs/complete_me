@@ -19,7 +19,7 @@ class CompleteMe
     else
      move_to_next_node(node, chars)
     end
-    count
+    # count
   end
 
   def end_of_word_with_children?(chars, node)
@@ -162,6 +162,7 @@ class CompleteMe
   end
 
   def delete_word(string)
+    clean_substring_hash(string)
     node = down_to_node(string)
     if node.children
       node.flag = false
@@ -180,5 +181,11 @@ class CompleteMe
       node.children.delete(key)
       return
     end
+  end
+
+  def clean_substring_hash(string)
+    substring_hash.values.each do |sub_hash|
+      sub_hash.delete(string)
+    end  
   end
 end
