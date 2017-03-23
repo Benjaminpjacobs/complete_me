@@ -1,9 +1,7 @@
 require './lib/node'
-require 'pry'
 
 class CompleteMe
   attr_accessor :root, :substring_hash
-
 
   def initialize
     @root = Node.new
@@ -12,20 +10,24 @@ class CompleteMe
 
   def insert(string, node=@root)
     chars = string.chars
-    if end_of_word_with_children(chars, node)
+    if end_of_word_with_children?(chars, node)
       return
-    elsif end_of_word(chars, node)
+    elsif end_of_word?(chars, node)
       return
     elsif letter_is_not_a_child(node, chars)
       insert_new_child(node, chars)
     else
      move_to_next_node(node, chars)
     end
+    count
   end
 
-  def move_to_next_node(node,chars)
-    node = node.next_node(chars.shift)
-    insert(chars.join,node)
+  def end_of_word_with_children?(chars, node)
+    node.flag = true if chars.empty? && !node.children.empty?
+  end
+
+  def end_of_word?(chars, node)
+    node.flag = true  if chars.empty?
   end
 
   def insert_new_child(node, chars)
@@ -33,22 +35,14 @@ class CompleteMe
     node = node.next_node(chars.shift)
     insert(chars.join,node)
   end
-
+  
   def letter_is_not_a_child(node, chars)
     !node.children.include?(chars[0].to_sym)
   end
 
-  def end_of_word_with_children(chars, node)
-    node.flag = true if chars.empty? && !node.children.empty?
-  end
-
-  def end_of_word(chars, node)
-    node.flag = true  if chars.empty?
-  end
-
-  def populate(dictionary)
-    dictionary = dictionary.split("\n")
-    dictionary.each{ |word| insert(word) }
+  def move_to_next_node(node,chars)
+    node = node.next_node(chars.shift)
+    insert(chars.join,node)
   end
 
   def count
@@ -83,12 +77,9 @@ class CompleteMe
     end
   end
 
-  def down_to_node(substring, node=root)
-    return node if substring.empty?
-    node_path = substring.split('')
-    node = node.next_node(node_path.shift)
-    substring = node_path.join
-    down_to_node(substring, node)
+  def populate(dictionary)
+    dictionary = dictionary.split("\n")
+    dictionary.each{ |word| insert(word) }
   end
 
   def suggest(substring)
@@ -97,23 +88,12 @@ class CompleteMe
     check_weighting(substring, suggestions)
   end
 
-  def check_weighting(substring, suggestions)
-    if substring_hash.keys.include?(substring)
-      move_up_weighted_suggestion(substring, suggestions)
-    else
-      suggestions
-    end
-  end
-
-  def move_up_weighted_suggestion(substring, suggestions)
-    top_hit = find_top_hit(substring)
-    suggestions.delete(top_hit)
-    suggestions.unshift(top_hit)
-  end
-
-  def find_top_hit(substring)
-     key =substring_hash[substring].values.max
-     substring_hash[substring].key(key)
+  def down_to_node(substring, node=root)
+    return node if substring.empty?
+    node_path = substring.split('')
+    node = node.next_node(node_path.shift)
+    substring = node_path.join
+    down_to_node(substring, node)
   end
 
   def traverse_trie(node, prefix, suggestions=[])
@@ -138,12 +118,31 @@ class CompleteMe
     suggestions.push(traverse_trie(node.children[key],prefix, suggestions))
   end
 
+  def check_weighting(substring, suggestions)
+    if substring_hash.keys.include?(substring)
+      move_up_weighted_suggestion(substring, suggestions)
+    else
+      suggestions
+    end
+  end
+
+  def move_up_weighted_suggestion(substring, suggestions)
+    top_hit = find_top_hit(substring)
+    suggestions.delete(top_hit)
+    suggestions.unshift(top_hit)
+  end
+
+  def find_top_hit(substring)
+     key =substring_hash[substring].values.max
+     substring_hash[substring].key(key)
+  end
+
   def clean_up_suggestions(suggestions)
     suggestions.map!{|sug| sug if sug.is_a?(String)}.compact!
   end
 
   def select(substring, selection)
-    if substring_tracked_but_has_value(substring, selection)
+    if substring_tracked_but_has_value?(substring, selection)
        substring_hash[substring][selection] = 1
     elsif substring_hash.keys.include?(substring)
       substring_hash[substring][selection] += 1
@@ -151,7 +150,8 @@ class CompleteMe
       create_selection_hash(selection, substring)
     end
   end
-  def substring_tracked_but_has_value(substring, selection)
+
+  def substring_tracked_but_has_value?(substring, selection)
     substring_hash.keys.include?(substring) && !substring_hash[substring].keys.include?(selection)
   end
 
@@ -159,5 +159,26 @@ class CompleteMe
     selection_hash = {}
     selection_hash[selection] = 1
     substring_hash[substring] = selection_hash
+  end
+
+  def delete_word(string)
+    node = down_to_node(string)
+    if node.children
+      node.flag = false
+    else
+      delete_leaf(string, node)
+    end
+  end
+
+  def delete_leaf(string, node)
+    key = string[-1].to_sym
+    node = down_to_node(string.chop!)
+    if node.children.keys.count == 1
+      node.children = {}
+      delete_leaf(string, down_to_node(string))
+    else
+      node.children.delete(key)
+      return
+    end
   end
 end

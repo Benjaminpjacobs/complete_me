@@ -1,6 +1,8 @@
 require 'minitest/autorun'
 require 'minitest/pride'
+require './test/test_helper'
 require './lib/complete_me'
+require "pry"
 
 class CompleteMeTest < Minitest::Test
   def test_it_exists
@@ -18,12 +20,16 @@ class CompleteMeTest < Minitest::Test
     cm.root.children[:a] = Node.new
     assert_instance_of Node, cm.root.children[:a]
   end
+
   def test_it_can_insert_letter
     cm = CompleteMe.new
     cm.insert("p")
-    expected = [:p]
+    cm.insert("n")
+    cm.insert("g")
+    expected = [:p, :n, :g]
     assert_equal expected, cm.root.children.keys
   end
+
   def test_it_can_insert_word
     cm = CompleteMe.new
     cm.insert("pit")
@@ -35,8 +41,34 @@ class CompleteMeTest < Minitest::Test
     assert_equal expected, cm.root.children[:p].children[:i].children.keys
   end
 
+  def test_end_of_word_with_children
+    cm = CompleteMe.new
+    cm.insert("pi")
+    cm.end_of_word_with_children?('',cm.root.children[:p])
+    assert cm.root.children[:p].flag
+  end
+
+  def test_end_of_word
+    cm = CompleteMe.new
+    cm.insert('p')
+    cm.root.children[:p].flag = false
+    cm.end_of_word?('', cm.root.children[:p])
+    assert cm.root.children[:p].flag
+  end
+
+  def test_insert_new_child
+    cm = CompleteMe.new
+    cm.insert_new_child(cm.root, ["c", "a", "t"])
+    assert cm.root.children[:c].children[:a].children[:t].flag
+    # binding.pry
+  end
+
+  def test_it_can_count_zero
+    cm = CompleteMe.new
+    assert_equal 0, cm.count
+  end
+
   def test_it_can_count
-    # skip
     cm = CompleteMe.new
     cm.insert("aa")
     cm.insert("a")
@@ -49,20 +81,21 @@ class CompleteMeTest < Minitest::Test
     cm.insert("aardwolf")
     assert_equal 9, cm.count
   end
+
   def test_it_can_count_bigger
-    skip
     cm = CompleteMe.new
     dictionary = File.read("/usr/share/dict/words")
     cm.populate(dictionary)
     assert_equal 235886, cm.count
   end
+
   def test_it_can_suggest_big
-    skip
     cm = CompleteMe.new
     dictionary = File.read("/usr/share/dict/words")
     cm.populate(dictionary)
     expected = 991
     assert_equal expected, cm.suggest("do").count
+
   end
   def test_down_to_node
     cm = CompleteMe.new
@@ -70,6 +103,7 @@ class CompleteMeTest < Minitest::Test
     expected = [:z]
     assert_equal expected, cm.down_to_node("piz").children.keys
   end
+
   def test_suggestion
     cm = CompleteMe.new
     cm.insert("pizza")
@@ -78,6 +112,7 @@ class CompleteMeTest < Minitest::Test
     expected = ["pize", "pizza", "pizzeria"]
     assert_equal expected, cm.suggest("piz") 
   end
+
   def test_suggestion
     cm = CompleteMe.new
     cm.insert("do")
@@ -87,6 +122,7 @@ class CompleteMeTest < Minitest::Test
     expected = ["do", "dog", "dont", "dood"]
     assert_equal expected, cm.suggest("do") 
   end
+
   def test_select
     cm = CompleteMe.new
     cm.insert("pizza")
@@ -109,6 +145,7 @@ class CompleteMeTest < Minitest::Test
     expected = ["pizza", "piza", "pizo"]
     assert_equal expected, result
   end
+
   def test_substring_specific_tracking
     cm = CompleteMe.new
     dictionary = File.read("/usr/share/dict/words")
@@ -123,5 +160,29 @@ class CompleteMeTest < Minitest::Test
     cm.select("pi", "pizzicato")
     assert_equal "pizzeria", cm.suggest("piz")[0]
     assert_equal "pizzicato", cm.suggest("pi")[0]
+  end
+
+  def test_delete_intermediate_node
+    cm = CompleteMe.new
+    cm.insert("do")
+    cm.insert("dog")
+    cm.insert("dot")
+    cm.insert("doodle")
+    cm.insert("doubt")
+    cm.insert("double")
+    assert_equal "dog",  cm.suggest("d")[1]
+    # binding.pry
+    cm.delete_word("dog")
+    assert_equal "doodle", cm.suggest("d")[1]
+  end
+
+  def test_delete_leaf_node
+    cm = CompleteMe.new
+    cm.insert("apple")
+    cm.insert("apples")
+    cm.insert("apportion")
+    assert_equal "apple", cm.suggest("app")[0]
+    cm.delete_word("apple")
+    assert_equal "apples", cm.suggest("app")[0]
   end
 end
