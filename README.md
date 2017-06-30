@@ -1,4 +1,4 @@
-#Complete Me
+# Complete Me
 
 Everyone in today’s smartphone-saturated world has had their share of interactions with textual “autocomplete.” 
 You may have sometimes even wondered if autocomplete is worth the trouble, given the ridiculous completions it sometimes attempts.
